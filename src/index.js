@@ -1,11 +1,9 @@
 // require ('dotenv').config({path:'/.env'})
-
 import dotenv from "dotenv";
 dotenv.config();
 
-import express from "express";
+import { app } from "./app.js";   // ✅ yaha import karo
 import connectDB from "./db/index.js";
-
 
 connectDB()
 .then(() => {
@@ -16,9 +14,7 @@ connectDB()
 })
 .catch((err) => {
     console.log("MONGO DB CONNECTION FAILED !!!", err);
-})
-
-
+});
 
 
 /*
