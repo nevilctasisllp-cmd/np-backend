@@ -1,1 +1,1 @@
-export const DB_NAME = "backenddata"
+export const DB_NAME = "dataorchai"
