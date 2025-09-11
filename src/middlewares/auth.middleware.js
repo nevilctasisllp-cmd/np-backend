@@ -1,7 +1,8 @@
-import { User } from "../models/user.model";
-import { ApiError } from "../utils/ApiError";
-import { asynchandler } from "../utils/asynchandler";
+import { ApiError } from "../utils/ApiError.js";
+import { asynchandler } from "../utils/asynchandler.js";
 import JWT from "jsonwebtoken";
+import {User} from "../models/user.model.js"
+
 
 
 
@@ -18,7 +19,7 @@ import JWT from "jsonwebtoken";
             const decodedToken = JWT.verify(token , process.env.ACCESS_TOKEN_SECRET)
     
     
-            const user = await User.findById(decodedToken?._id)
+            const user = await user.findById(decodedToken?._id)
             .select("-password -refreshToken")
     
             if (!user) {

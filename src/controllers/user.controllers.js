@@ -3,6 +3,7 @@ import {ApiError} from "../utils/ApiError.js"
 import {User} from "../models/user.model.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
+import JWT from "jsonwebtoken";
 
 
     const generateAccessAndRefreshTokens = async(userID) => {
@@ -42,34 +43,36 @@ const registerUser = asynchandler( async (req,res) => {
                 throw new ApiError(409, "User with email or Username already exists")
             };
 
-            console.log('req.files: ', req.files);
-            const avatarLocalPath = req.files?.avatar[0]?.path;
-            const coverImageLocalPath = req.files?.coverImage[0]?.path;
+           console.log("req.files: ", req.files);
 
-            if (req.files && Array.isArray(req.files.coverImage)&&req.files.coverImage.length>0) {
-                coverImageLocalPath = req.files.coverImage[0].path
-            }
-            
-            if(!avatarLocalPath) {
-                throw new ApiError(400,"Avatar file is required")
-            };
+                const avatarLocalPath = req.files?.avatar?.[0]?.path || null;
+                let coverImageLocalPath = req.files?.coverImage?.[0]?.path || null;
 
+                if (!avatarLocalPath) {
+                throw new ApiError(400, "Avatar file is required");
+                }
 
-            const  avatar = await uploadOnCloudinary(avatarLocalPath);
-            const coverImage =  await uploadOnCloudinary(coverImageLocalPath);
+                // Agar coverImage hai to overwrite
+                if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+                coverImageLocalPath = req.files.coverImage[0].path;
+                }
 
-            if (!avatar) {
+                console.log("avatarLocalPath:", avatarLocalPath);
+                console.log("coverImageLocalPath:", coverImageLocalPath);
+
+            if (!avatarLocalPath) {
                 throw new ApiError (400, " avatar file is required")
             }
 
             const user = await User.create({
-                fullname,
-                avatar: avatar.url,
-                coverImagee: coverImagee?.url || "",
-                email,
-                password,
-                username: username.toLowercase()
-            })
+                    fullname: req.body.fullname,
+                    username: req.body.username.toLowerCase(),
+                    email: req.body.email,
+                    password: req.body.password,
+                    avatar: req.files?.avatar?.[0]?.path,          // required
+                    coverImage: req.files?.coverImage?.[0]?.path || "" // optional
+});
+
 
 
             const createdUser = await User.findById(user._id).select(
@@ -89,7 +92,7 @@ const registerUser = asynchandler( async (req,res) => {
 const loginUser = asynchandler(async (req ,res) => {
     const {email, username , password} = req.body
 
-    if (!username || !email) {
+    if (!username && !email) {
         throw new ApiError (400 , "username or email is required")
     }
 
@@ -158,7 +161,18 @@ const logoutuser = asynchandler(async (req,res) => {
     .json(new ApiResponse(200 , {}, "User loggedOut successfully"))
 })
 
+const refreshAccessToken = asynchandler(async (req,res) => {
+    const incomingRefreshtoken = req.cookies.refreshToken || req.body.refreshToken
 
+    if (!incomingRefreshtoken) {
+        throw new ApiError(401 , "unauthorized Request ")
+    }
+
+        JWT.verify(
+            incomingRefreshtoken
+        )
+
+})
 
 
 export {
