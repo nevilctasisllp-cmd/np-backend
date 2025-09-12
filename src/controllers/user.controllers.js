@@ -22,6 +22,8 @@ import JWT from "jsonwebtoken";
         }
     }
 
+
+    
 const registerUser = asynchandler( async (req,res) => {
     const {fullname , email ,username , password } = req.body 
         console.log("email:", email);
@@ -89,6 +91,7 @@ const registerUser = asynchandler( async (req,res) => {
 } );
 
 
+
 const loginUser = asynchandler(async (req ,res) => {
     const {email, username , password} = req.body
 
@@ -138,6 +141,8 @@ const loginUser = asynchandler(async (req ,res) => {
 
 });
 
+
+
 const logoutuser = asynchandler(async (req,res) => {
         await User.findByIdAndUpdate(
             req.user._id,
@@ -161,6 +166,8 @@ const logoutuser = asynchandler(async (req,res) => {
     .json(new ApiResponse(200 , {}, "User loggedOut successfully"))
 })
 
+
+
 const refreshAccessToken = asynchandler(async (req,res) => {
     const incomingRefreshtoken = req.cookies.refreshToken || req.body.refreshToken
 
@@ -175,10 +182,143 @@ const refreshAccessToken = asynchandler(async (req,res) => {
 })
 
 
+
+    const changeCurrentPassword = asynchandler(async (req,res) => {
+        const {oldPassword , newPassword} = req.body 
+
+        const user = await User.findById(req.user?._id);
+        const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+        if (!isPasswordCorrect) {
+            throw new ApiError(400,"Invalid OldPassword")          
+        }
+
+        user.password = newPassword
+        await user.save({
+            validateBeforeSave: false
+        })
+
+        return res
+        .status(200)
+        .json(new ApiResponse(200, {} , "Password Change Successfully "))
+    })
+
+
+
+
+const getCurrentUser = asynchandler( async (req,res) => {
+    return res
+    .status(200)
+    .json(200, req.user , "CurrentUser Fatched Successfully")
+})
+
+
+
+const updateAccountDetails = asynchandler( async (req,res) => {
+    const {fullname , email , } = req.body
+
+    if (!fullname || !email) {
+        throw new ApiError(400,"All Fields are Required")
+    }
+
+    const user = User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                fullname,
+                email,
+            }
+        },
+        {new:true}
+    
+    ).select("-password")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200 , user , "Account Details Updated Successfully"))
+
+})
+
+
+
+const updateUserAvatar = asynchandler( async (req,res) => 
+    {
+        const avatarLocalPath = req.file?.path
+
+        if (!avatarLocalPath) {
+            throw new ApiError(400, "Avatar file is Missing")
+        }
+
+        const avatar = await uploadOnCloudinary(avatarLocalPath)
+
+        if (!avatar.url) {
+            throw new ApiError (400 , "Error while uploading on avatar")
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.user?._id,
+            {
+                $set:{
+                    avatar: avatar.url
+                }
+            },
+            {new:true}
+        ).select("-password")
+
+        return res
+        .status(200)
+        .json(
+            new ApiResponse(200 , user , " CoverImage Updated Successfully ")
+        )
+
+
+    })
+
+
+
+    const updateUserCoverImage  = asynchandler( async (req,res) => 
+    {
+        const CoverImageLocalPath = req.file?.path
+
+        if (!CoverImageLocalPath) {
+            throw new ApiError(400, "CoverImage file is Missing")
+        }
+
+        const CoverImage = await uploadOnCloudinary(CoverImageLocalPath)
+
+        if (!CoverImage.url) {
+            throw new ApiError (400 , "Error while uploading on CoverImage")
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.user?._id,
+            {
+                $set:{
+                    coverImage: CoverImage.url
+                }
+            },
+            {new:true}
+        ).select("-password")
+
+        return res
+        .status(200)
+        .json(
+            new ApiResponse(200 , user , " CoverImage Updated Successfully ")
+        )
+
+        
+    })
+
+
 export {
     
     registerUser,
     loginUser,
-    logoutuser
-
+    logoutuser,
+    refreshAccessToken,
+    changeCurrentPassword,
+    getCurrentUser,
+    updateAccountDetails,
+    updateUserAvatar,
+    updateUserCoverImage
 }
